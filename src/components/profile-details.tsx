@@ -1,86 +1,145 @@
 "use client"
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
-import { MapPin, Mail, Phone, User, Briefcase, Calendar } from "lucide-react"
-import type { Profile } from "@/types/profile"
-import { MapView } from "@/components/map-view"
+import { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
+import { api } from '../services/api';
+import { Profile } from '../types/profile';
+import LoadingSpinner from './LoadingSpinner';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 
-interface ProfileDetailsProps {
-  profile: Profile
-}
+export default function ProfileDetails() {
+  const { id } = useParams<{ id: string }>();
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-export function ProfileDetails({ profile }: ProfileDetailsProps) {
-  return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row gap-6 items-start">
-        <Avatar className="h-24 w-24">
-          <AvatarImage src={profile.photo || "/placeholder.svg"} alt={profile.name} />
-          <AvatarFallback className="text-2xl">
-            <User className="h-12 w-12" />
-          </AvatarFallback>
-        </Avatar>
+  useEffect(() => {
+    fetchProfile();
+  }, [id]);
 
-        <div className="space-y-2 flex-1">
-          <h2 className="text-2xl font-bold">{profile.name}</h2>
+  const fetchProfile = async () => {
+    if (!id) return;
 
-          <div className="flex items-center text-sm text-muted-foreground">
-            <MapPin className="h-4 w-4 mr-2" />
-            <span>{profile.address}</span>
-          </div>
+    try {
+      const data = await api.getProfile(id);
+      setProfile(data);
+    } catch (err) {
+      setError('Failed to load profile');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-          {profile.email && (
-            <div className="flex items-center text-sm">
-              <Mail className="h-4 w-4 mr-2" />
-              <span>{profile.email}</span>
-            </div>
-          )}
+  if (loading) {
+    return <LoadingSpinner />;
+  }
 
-          {profile.phone && (
-            <div className="flex items-center text-sm">
-              <Phone className="h-4 w-4 mr-2" />
-              <span>{profile.phone}</span>
-            </div>
-          )}
-
-          {profile.occupation && (
-            <div className="flex items-center text-sm">
-              <Briefcase className="h-4 w-4 mr-2" />
-              <span>{profile.occupation}</span>
-            </div>
-          )}
-
-          {profile.birthdate && (
-            <div className="flex items-center text-sm">
-              <Calendar className="h-4 w-4 mr-2" />
-              <span>{profile.birthdate}</span>
-            </div>
-          )}
+  if (error || !profile) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-red-600 mb-4">
+            {error || 'Profile not found'}
+          </h2>
+          <p className="text-gray-600">Please try again later.</p>
         </div>
       </div>
+    );
+  }
 
-      <div>
-        <h3 className="text-lg font-medium mb-2">About</h3>
-        <p className="text-muted-foreground">{profile.description}</p>
-      </div>
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <div className="max-w-4xl mx-auto">
+        <Card>
+          <CardHeader className="flex flex-row items-center gap-4">
+            <Avatar className="h-16 w-16">
+              <AvatarImage src={profile.photo} alt={profile.name} />
+              <AvatarFallback>{profile.name.charAt(0)}</AvatarFallback>
+            </Avatar>
+            <div>
+              <CardTitle className="text-2xl">{profile.name}</CardTitle>
+              {profile.occupation && (
+                <p className="text-gray-600">{profile.occupation}</p>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {profile.description && (
+              <div>
+                <h3 className="text-lg font-semibold mb-2">About</h3>
+                <p className="text-gray-700">{profile.description}</p>
+              </div>
+            )}
 
-      <div className="h-[300px] rounded-lg overflow-hidden border">
-        <MapView selectedProfile={profile} />
-      </div>
+            <div>
+              <h3 className="text-lg font-semibold mb-2">Contact Information</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {profile.email && (
+                  <div>
+                    <p className="text-sm text-gray-600">Email</p>
+                    <p className="text-gray-900">{profile.email}</p>
+                  </div>
+                )}
+                {profile.phone && (
+                  <div>
+                    <p className="text-sm text-gray-600">Phone</p>
+                    <p className="text-gray-900">{profile.phone}</p>
+                  </div>
+                )}
+              </div>
+            </div>
 
-      <div className="flex justify-end">
-        <Button
-          variant="outline"
-          onClick={() =>
-            window.open(
-              `https://www.google.com/maps/search/?api=1&query=${profile.coordinates.lat},${profile.coordinates.lng}`,
-              "_blank",
-            )
-          }
-        >
-          Open in Google Maps
-        </Button>
+            <div>
+              <h3 className="text-lg font-semibold mb-2">Location</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-gray-600">Address</p>
+                  <p className="text-gray-900">
+                    {profile.address.street}
+                    <br />
+                    {profile.address.city}, {profile.address.state}
+                    <br />
+                    {profile.address.country}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Coordinates</p>
+                  <p className="text-gray-900">
+                    Lat: {profile.address.coordinates.lat}
+                    <br />
+                    Lng: {profile.address.coordinates.lng}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {profile.birthdate && (
+              <div>
+                <h3 className="text-lg font-semibold mb-2">Birth Date</h3>
+                <p className="text-gray-900">{profile.birthdate}</p>
+              </div>
+            )}
+
+            {profile.interests && profile.interests.length > 0 && (
+              <div>
+                <h3 className="text-lg font-semibold mb-2">Interests</h3>
+                <div className="flex flex-wrap gap-2">
+                  {profile.interests.map((interest, index) => (
+                    <span
+                      key={index}
+                      className="px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm"
+                    >
+                      {interest}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
-  )
+  );
 }

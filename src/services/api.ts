@@ -5,45 +5,39 @@ const mockProfiles: Profile[] = [
     id: '1',
     name: 'John Doe',
     photo: 'https://randomuser.me/api/portraits/men/1.jpg',
-    description: 'Software Engineer with 5 years of experience in web development.',
+    description: 'Software engineer from New York.',
     address: {
       street: '123 Main St',
-      city: 'San Francisco',
-      state: 'CA',
+      city: 'New York',
+      state: 'NY',
       country: 'USA',
-      coordinates: {
-        lat: 37.7749,
-        lng: -122.4194
-      }
+      coordinates: { lat: 40.7128, lng: -74.006 },
     },
-    contactInfo: {
-      email: 'john.doe@example.com',
-      phone: '+1 (555) 123-4567'
-    },
-    interests: ['Web Development', 'AI', 'Hiking'],
+    email: 'john.doe@example.com',
+    phone: '+1 555-1234',
+    occupation: 'Software Engineer',
+    birthdate: '1990-01-01',
+    interests: ['coding', 'music', 'travel'],
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-01T00:00:00Z'
   },
   {
     id: '2',
     name: 'Jane Smith',
-    photo: 'https://randomuser.me/api/portraits/women/1.jpg',
-    description: 'UX Designer passionate about creating beautiful and functional interfaces.',
+    photo: 'https://randomuser.me/api/portraits/women/2.jpg',
+    description: 'Graphic designer from London.',
     address: {
-      street: '456 Market St',
-      city: 'New York',
-      state: 'NY',
-      country: 'USA',
-      coordinates: {
-        lat: 40.7128,
-        lng: -74.0060
-      }
+      street: '456 Queen St',
+      city: 'London',
+      state: '',
+      country: 'UK',
+      coordinates: { lat: 51.5074, lng: -0.1278 },
     },
-    contactInfo: {
-      email: 'jane.smith@example.com',
-      phone: '+1 (555) 987-6543'
-    },
-    interests: ['UI/UX Design', 'Photography', 'Travel'],
+    email: 'jane.smith@example.com',
+    phone: '+44 20 7946 0958',
+    occupation: 'Graphic Designer',
+    birthdate: '1985-05-15',
+    interests: ['art', 'photography', 'travel'],
     createdAt: '2024-01-02T00:00:00Z',
     updatedAt: '2024-01-02T00:00:00Z'
   }
