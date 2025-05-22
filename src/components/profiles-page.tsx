@@ -1,0 +1,40 @@
+"use client"
+
+import { useState } from "react"
+import { Input } from "@/components/ui/input"
+import { ProfileList } from "@/components/profile-list"
+import { MapView } from "@/components/map-view"
+import { useProfiles } from "@/context/profile-context"
+import type { Profile } from "@/types/profile"
+
+export function ProfilesPage() {
+  const { profiles } = useProfiles()
+  const [searchQuery, setSearchQuery] = useState("")
+  const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null)
+
+  const filteredProfiles = profiles.filter(
+    (profile) =>
+      profile.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      profile.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      profile.address.toLowerCase().includes(searchQuery.toLowerCase()),
+  )
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="lg:col-span-1">
+        <div className="mb-4">
+          <Input
+            placeholder="Search profiles..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full"
+          />
+        </div>
+        <ProfileList profiles={filteredProfiles} onSelectProfile={setSelectedProfile} />
+      </div>
+      <div className="lg:col-span-2 h-[600px] rounded-lg overflow-hidden border">
+        <MapView selectedProfile={selectedProfile} />
+      </div>
+    </div>
+  )
+}
