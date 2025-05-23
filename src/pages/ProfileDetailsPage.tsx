@@ -1,187 +1,245 @@
-import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
-import { api } from "../services/api";
-import { Profile } from "../types/profile";
-import LoadingSpinner from "../components/LoadingSpinner";
+import { useEffect, useState } from "react";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import { useProfiles } from "../contexts/ProfilesContext";
+import MapView from "../components/map/MapView";
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "../components/admin/card";
-import { Avatar, AvatarFallback, AvatarImage } from "../components/admin/avatar";
-import { Mail, Phone, MapPin, Calendar, Briefcase, Tag } from "lucide-react";
+  MapPin,
+  Mail,
+  Phone,
+  Briefcase,
+  ChevronLeft,
+  ExternalLink,
+  Globe,
+  Linkedin,
+  Twitter,
+  Github,
+} from "lucide-react";
+import { Profile } from "../types";
 
-export default function ProfileDetails() {
+const ProfileDetailPage = () => {
   const { id } = useParams<{ id: string }>();
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { getProfileById, loading } = useProfiles();
+  const [profile, setProfile] = useState<Profile | undefined>(undefined);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        if (!id) return;
-        const data = await api.getProfile(id);
-        setProfile(data);
-      } catch (err) {
-        setError("Failed to load profile");
-        console.error(err);
-      } finally {
-        setLoading(false);
+    if (id) {
+      const profileData = getProfileById(id);
+      if (profileData) {
+        setProfile(profileData);
       }
-    };
-
-    fetchProfile();
-  }, [id]);
+    }
+  }, [id, getProfileById]);
 
   if (loading) {
-    return <LoadingSpinner />;
+    return (
+      <div className="container-custom py-8 flex justify-center">
+        <div className="animate-pulse space-y-8 w-full max-w-4xl">
+          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+          <div className="h-64 bg-gray-200 rounded"></div>
+          <div className="space-y-3">
+            <div className="grid grid-cols-3 gap-4">
+              <div className="h-8 bg-gray-200 rounded col-span-2"></div>
+              <div className="h-8 bg-gray-200 rounded col-span-1"></div>
+            </div>
+            <div className="h-8 bg-gray-200 rounded"></div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
-  if (error || !profile) {
+  if (!profile) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-red-600 mb-4">
-            {error || "Profile not found"}
+      <div className="container-custom py-8">
+        <div className="bg-white rounded-lg shadow-sm p-8 text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">
+            Profile Not Found
           </h2>
-          <p className="text-gray-600">
-            Please check the URL or try again later.
+          <p className="text-gray-600 mb-6">
+            The profile you're looking for doesn't exist or has been removed.
           </p>
+          <Link to="/" className="btn btn-primary">
+            Return to Profiles
+          </Link>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-4xl mx-auto">
-        <Card className="overflow-hidden">
-          <div className="relative h-48 bg-gradient-to-r from-indigo-500 to-purple-600">
-            <div className="absolute -bottom-16 left-8">
-              <Avatar className="h-32 w-32 border-4 border-white">
-                <AvatarImage src={profile.photo} alt={profile.name} />
-                <AvatarFallback className="text-4xl">
-                  {profile.name.charAt(0)}
-                </AvatarFallback>
-              </Avatar>
-            </div>
-          </div>
+    <div className="container-custom py-8">
+      <button
+        onClick={() => navigate(-1)}
+        className="flex items-center text-primary-600 hover:text-primary-700 mb-6 font-medium"
+      >
+        <ChevronLeft size={18} className="mr-1" />
+        Back to Profiles
+      </button>
 
-          <CardHeader className="pt-20 pb-6">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-              <div>
-                <CardTitle className="text-3xl font-bold text-gray-900">
+      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div className="md:flex">
+          <div className="p-8 md:w-1/2">
+            <div className="flex items-start">
+              <img
+                src={profile.avatar}
+                alt={profile.name}
+                className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-md"
+              />
+              <div className="ml-6">
+                <h1 className="text-3xl font-bold text-gray-900">
                   {profile.name}
-                </CardTitle>
-                {profile.occupation && (
-                  <p className="text-lg text-gray-600 mt-1">
-                    {profile.occupation}
-                  </p>
-                )}
-              </div>
-            </div>
-          </CardHeader>
-
-          <CardContent className="space-y-8">
-            {profile.description && (
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">
-                  About
-                </h3>
-                <p className="text-gray-700 leading-relaxed">
-                  {profile.description}
-                </p>
-              </div>
-            )}
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  Contact Information
-                </h3>
-                <div className="space-y-4">
-                  {profile.email && (
-                    <div className="flex items-center space-x-3">
-                      <Mail className="h-5 w-5 text-gray-500" />
-                      <span className="text-gray-700">{profile.email}</span>
-                    </div>
-                  )}
-                  {profile.phone && (
-                    <div className="flex items-center space-x-3">
-                      <Phone className="h-5 w-5 text-gray-500" />
-                      <span className="text-gray-700">{profile.phone}</span>
-                    </div>
-                  )}
+                </h1>
+                <div className="flex items-center text-gray-600 mt-1">
+                  <Briefcase size={16} className="mr-1.5" />
+                  <span>
+                    {profile.role} at {profile.company}
+                  </span>
+                </div>
+                <div className="flex items-center text-gray-600 mt-1">
+                  <MapPin size={16} className="mr-1.5" />
+                  <span>
+                    {profile.address.city}, {profile.address.state},{" "}
+                    {profile.address.country}
+                  </span>
                 </div>
               </div>
+            </div>
 
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  Location
-                </h3>
-                <div className="space-y-4">
-                  <div className="flex items-start space-x-3">
-                    <MapPin className="h-5 w-5 text-gray-500 mt-1" />
-                    <div className="text-gray-700">
-                      <p>{profile.address.street}</p>
-                      <p>
-                        {profile.address.city}, {profile.address.state}
-                      </p>
-                      <p>{profile.address.country}</p>
-                    </div>
-                  </div>
+            <div className="mt-8">
+              <h2 className="text-xl font-semibold text-gray-900 mb-3">
+                About
+              </h2>
+              <p className="text-gray-700 leading-relaxed">
+                {profile.description}
+              </p>
+            </div>
+
+            <div className="mt-8">
+              <h2 className="text-xl font-semibold text-gray-900 mb-3">
+                Contact Information
+              </h2>
+              <div className="space-y-2">
+                <div className="flex items-center">
+                  <Mail size={16} className="text-gray-500 mr-2" />
                   <a
-                    href={`https://www.google.com/maps/search/?api=1&query=${profile.address.coordinates.lat},${profile.address.coordinates.lng}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center text-indigo-600 hover:text-indigo-800"
+                    href={`mailto:${profile.email}`}
+                    className="text-primary-600 hover:underline"
                   >
-                    <MapPin className="h-4 w-4 mr-2" />
-                    View on Google Maps
+                    {profile.email}
                   </a>
                 </div>
-              </div>
-            </div>
-
-            {profile.birthdate && (
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  Personal Information
-                </h3>
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-3">
-                    <Calendar className="h-5 w-5 text-gray-500" />
-                    <span className="text-gray-700">
-                      Born: {profile.birthdate}
-                    </span>
+                <div className="flex items-center">
+                  <Phone size={16} className="text-gray-500 mr-2" />
+                  <a
+                    href={`tel:${profile.phone}`}
+                    className="text-primary-600 hover:underline"
+                  >
+                    {profile.phone}
+                  </a>
+                </div>
+                <div className="flex items-start">
+                  <MapPin size={16} className="text-gray-500 mr-2 mt-0.5" />
+                  <div>
+                    <p className="text-gray-700">{profile.address.street}</p>
+                    <p className="text-gray-700">
+                      {profile.address.city}, {profile.address.state}{" "}
+                      {profile.address.zipCode}
+                    </p>
+                    <p className="text-gray-700">{profile.address.country}</p>
                   </div>
                 </div>
               </div>
-            )}
+            </div>
 
-            {profile.interests && profile.interests.length > 0 && (
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  Interests
-                </h3>
-                <div className="flex flex-wrap gap-2">
-                  {profile.interests.map((interest, index) => (
-                    <span
-                      key={index}
-                      className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800"
+            <div className="mt-8">
+              <h2 className="text-xl font-semibold text-gray-900 mb-3">
+                Skills
+              </h2>
+              <div className="flex flex-wrap gap-2">
+                {profile.skills.map((skill, index) => (
+                  <span
+                    key={index}
+                    className="px-3 py-1 bg-primary-50 text-primary-700 rounded-full text-sm font-medium"
+                  >
+                    {skill}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {Object.keys(profile.socials).length > 0 && (
+              <div className="mt-8">
+                <h2 className="text-xl font-semibold text-gray-900 mb-3">
+                  Social Links
+                </h2>
+                <div className="flex flex-wrap gap-3">
+                  {profile.socials.linkedin && (
+                    <a
+                      href={`https://${profile.socials.linkedin}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center text-gray-700 hover:text-primary-600 transition-colors"
                     >
-                      <Tag className="h-4 w-4 mr-1" />
-                      {interest}
-                    </span>
-                  ))}
+                      <Linkedin size={18} className="mr-1" />
+                      LinkedIn
+                      <ExternalLink size={14} className="ml-1" />
+                    </a>
+                  )}
+                  {profile.socials.twitter && (
+                    <a
+                      href={`https://${profile.socials.twitter}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center text-gray-700 hover:text-primary-600 transition-colors"
+                    >
+                      <Twitter size={18} className="mr-1" />
+                      Twitter
+                      <ExternalLink size={14} className="ml-1" />
+                    </a>
+                  )}
+                  {profile.socials.github && (
+                    <a
+                      href={`https://${profile.socials.github}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center text-gray-700 hover:text-primary-600 transition-colors"
+                    >
+                      <Github size={18} className="mr-1" />
+                      GitHub
+                      <ExternalLink size={14} className="ml-1" />
+                    </a>
+                  )}
+                  {(profile.socials.website || profile.socials.portfolio) && (
+                    <a
+                      href={`https://${
+                        profile.socials.website || profile.socials.portfolio
+                      }`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center text-gray-700 hover:text-primary-600 transition-colors"
+                    >
+                      <Globe size={18} className="mr-1" />
+                      Website
+                      <ExternalLink size={14} className="ml-1" />
+                    </a>
+                  )}
                 </div>
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+
+          <div className="md:w-1/2 h-[400px] md:h-auto relative">
+            <MapView
+              profiles={[profile]}
+              initialCenter={profile.address.coordinates}
+              zoom={14}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );
-}
+};
+
+export default ProfileDetailPage;
