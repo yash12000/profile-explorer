@@ -1,12 +1,12 @@
-import { useState } from 'react';
-import { Routes, Route } from 'react-router-dom';
-import { ProfilesProvider } from './contexts/ProfilesContext';
-import HomePage from './pages/HomePage';
-import ProfileDetailPage from './pages/ProfileDetailPage';
-import AdminPage from './pages/AdminPage';
-import NotFoundPage from './pages/NotFoundPage';
-import Navbar from './components/layout/Navbar';
-import Footer from './components/layout/Footer';
+import { useState } from "react";
+import { Routes, Route } from "react-router-dom";
+import { ProfilesProvider } from "./contexts/ProfilesContext";
+import HomePage from "./pages/HomePage";
+import ProfileDetailPage from "./pages/ProfileDetailPage";
+import AdminPage from "./pages/AdminPage";
+import NotFoundPage from "./pages/NotFoundPage";
+import Navbar from "./components/layout/Navbar";
+import Footer from "./components/layout/Footer";
 
 function App() {
   return (
