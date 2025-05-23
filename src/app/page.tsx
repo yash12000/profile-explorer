@@ -1,18 +1,23 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { api } from '../services/api';
-import { Profile } from '../types/profile';
-import LoadingSpinner from '../components/LoadingSpinner';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '../components/ui/avatar';
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { api } from "../services/api";
+import { Profile } from "../types/profile";
+import LoadingSpinner from "../components/LoadingSpinner";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
 
 export default function Home() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     fetchProfiles();
@@ -23,7 +28,7 @@ export default function Home() {
       const data = await api.getProfiles();
       setProfiles(data);
     } catch (err) {
-      setError('Failed to load profiles');
+      setError("Failed to load profiles");
       console.error(err);
     } finally {
       setLoading(false);
@@ -77,12 +82,16 @@ export default function Home() {
                   <div>
                     <CardTitle>{profile.name}</CardTitle>
                     {profile.occupation && (
-                      <p className="text-sm text-gray-600">{profile.occupation}</p>
+                      <p className="text-sm text-gray-600">
+                        {profile.occupation}
+                      </p>
                     )}
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-gray-700 line-clamp-2">{profile.description}</p>
+                  <p className="text-gray-700 line-clamp-2">
+                    {profile.description}
+                  </p>
                   <div className="mt-4 text-sm text-gray-600">
                     <p>
                       {profile.address.city}, {profile.address.country}

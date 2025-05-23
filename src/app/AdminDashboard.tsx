@@ -1,26 +1,26 @@
-import React, { useState, useEffect } from 'react';
-import { Profile, ProfileFormData } from '../types/profile';
-import LoadingSpinner from '../components/LoadingSpinner';
-import { api } from '../services/api';
+import React, { useState, useEffect } from "react";
+import { Profile, ProfileFormData } from "../types/profile";
+import LoadingSpinner from "../components/LoadingSpinner";
+import { api } from "../services/api";
 
 const AdminDashboard = () => {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingProfile, setEditingProfile] = useState<Profile | null>(null);
   const [formData, setFormData] = useState<ProfileFormData>({
-    name: '',
-    photo: '',
-    description: '',
+    name: "",
+    photo: "",
+    description: "",
     address: {
-      street: '',
-      city: '',
-      state: '',
-      country: '',
+      street: "",
+      city: "",
+      state: "",
+      country: "",
       coordinates: {
         lat: 0,
-        lng: 0
-      }
-    }
+        lng: 0,
+      },
+    },
   });
 
   useEffect(() => {
@@ -32,7 +32,7 @@ const AdminDashboard = () => {
       const data = await api.getProfiles();
       setProfiles(data);
     } catch (error) {
-      console.error('Error fetching profiles:', error);
+      console.error("Error fetching profiles:", error);
     } finally {
       setLoading(false);
     }
@@ -42,7 +42,10 @@ const AdminDashboard = () => {
     e.preventDefault();
     try {
       if (editingProfile) {
-        const updatedProfile = await api.updateProfile(editingProfile.id, formData);
+        const updatedProfile = await api.updateProfile(
+          editingProfile.id,
+          formData
+        );
         if (updatedProfile) {
           fetchProfiles();
           resetForm();
@@ -53,19 +56,19 @@ const AdminDashboard = () => {
         resetForm();
       }
     } catch (error) {
-      console.error('Error saving profile:', error);
+      console.error("Error saving profile:", error);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this profile?')) {
+    if (window.confirm("Are you sure you want to delete this profile?")) {
       try {
         const success = await api.deleteProfile(id);
         if (success) {
           fetchProfiles();
         }
       } catch (error) {
-        console.error('Error deleting profile:', error);
+        console.error("Error deleting profile:", error);
       }
     }
   };
@@ -76,26 +79,26 @@ const AdminDashboard = () => {
       name: profile.name,
       photo: profile.photo,
       description: profile.description,
-      address: profile.address
+      address: profile.address,
     });
   };
 
   const resetForm = () => {
     setEditingProfile(null);
     setFormData({
-      name: '',
-      photo: '',
-      description: '',
+      name: "",
+      photo: "",
+      description: "",
       address: {
-        street: '',
-        city: '',
-        state: '',
-        country: '',
+        street: "",
+        city: "",
+        state: "",
+        country: "",
         coordinates: {
           lat: 0,
-          lng: 0
-        }
-      }
+          lng: 0,
+        },
+      },
     });
   };
 
@@ -118,36 +121,48 @@ const AdminDashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-xl font-semibold mb-4">
-            {editingProfile ? 'Edit Profile' : 'Add New Profile'}
+            {editingProfile ? "Edit Profile" : "Add New Profile"}
           </h2>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">Name</label>
+              <label className="block text-sm font-medium text-gray-700">
+                Name
+              </label>
               <input
                 type="text"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">Photo URL</label>
+              <label className="block text-sm font-medium text-gray-700">
+                Photo URL
+              </label>
               <input
                 type="url"
                 value={formData.photo}
-                onChange={(e) => setFormData({ ...formData, photo: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, photo: e.target.value })
+                }
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">Description</label>
+              <label className="block text-sm font-medium text-gray-700">
+                Description
+              </label>
               <textarea
                 value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, description: e.target.value })
+                }
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 rows={3}
                 required
@@ -157,14 +172,18 @@ const AdminDashboard = () => {
             <div className="space-y-4">
               <h3 className="text-lg font-medium text-gray-900">Address</h3>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Street</label>
+                <label className="block text-sm font-medium text-gray-700">
+                  Street
+                </label>
                 <input
                   type="text"
                   value={formData.address.street}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    address: { ...formData.address, street: e.target.value }
-                  })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      address: { ...formData.address, street: e.target.value },
+                    })
+                  }
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                   required
                 />
@@ -172,28 +191,36 @@ const AdminDashboard = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">City</label>
+                  <label className="block text-sm font-medium text-gray-700">
+                    City
+                  </label>
                   <input
                     type="text"
                     value={formData.address.city}
-                    onChange={(e) => setFormData({
-                      ...formData,
-                      address: { ...formData.address, city: e.target.value }
-                    })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        address: { ...formData.address, city: e.target.value },
+                      })
+                    }
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">State</label>
+                  <label className="block text-sm font-medium text-gray-700">
+                    State
+                  </label>
                   <input
                     type="text"
                     value={formData.address.state}
-                    onChange={(e) => setFormData({
-                      ...formData,
-                      address: { ...formData.address, state: e.target.value }
-                    })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        address: { ...formData.address, state: e.target.value },
+                      })
+                    }
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                     required
                   />
@@ -201,14 +228,18 @@ const AdminDashboard = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700">Country</label>
+                <label className="block text-sm font-medium text-gray-700">
+                  Country
+                </label>
                 <input
                   type="text"
                   value={formData.address.country}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    address: { ...formData.address, country: e.target.value }
-                  })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      address: { ...formData.address, country: e.target.value },
+                    })
+                  }
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                   required
                 />
@@ -227,7 +258,7 @@ const AdminDashboard = () => {
                 type="submit"
                 className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
               >
-                {editingProfile ? 'Update Profile' : 'Create Profile'}
+                {editingProfile ? "Update Profile" : "Create Profile"}
               </button>
             </div>
           </form>
@@ -249,8 +280,12 @@ const AdminDashboard = () => {
                       className="w-12 h-12 rounded-full object-cover"
                     />
                     <div>
-                      <h3 className="font-medium text-gray-900">{profile.name}</h3>
-                      <p className="text-sm text-gray-500">{profile.address.city}</p>
+                      <h3 className="font-medium text-gray-900">
+                        {profile.name}
+                      </h3>
+                      <p className="text-sm text-gray-500">
+                        {profile.address.city}
+                      </p>
                     </div>
                   </div>
                   <div className="flex space-x-2">
@@ -277,4 +312,4 @@ const AdminDashboard = () => {
   );
 };
 
-export default AdminDashboard; 
+export default AdminDashboard;

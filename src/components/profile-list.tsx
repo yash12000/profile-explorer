@@ -1,99 +1,76 @@
 "use client"
 
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { api } from '../services/api';
-import { Profile } from '../types/profile';
-import LoadingSpinner from './LoadingSpinner';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { MapPin, User } from "lucide-react"
+import type { Profile } from "@/types/profile"
+import { ProfileDetails } from "@/components/profile-details"
+import { Dialog, DialogContent } from "@/components/ui/dialog"
 
-export default function ProfileList() {
-  const [profiles, setProfiles] = useState<Profile[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
+interface ProfileListProps {
+  profiles: Profile[]
+  onSelectProfile: (profile: Profile) => void
+}
 
-  useEffect(() => {
-    fetchProfiles();
-  }, []);
+export function ProfileList({ profiles, onSelectProfile }: ProfileListProps) {
+  const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null)
 
-  const fetchProfiles = async () => {
-    try {
-      const data = await api.getProfiles();
-      setProfiles(data);
-    } catch (err) {
-      setError('Failed to load profiles');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const filteredProfiles = profiles.filter((profile) =>
-    profile.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  if (loading) {
-    return <LoadingSpinner />;
+  const handleShowSummary = (profile: Profile) => {
+    onSelectProfile(profile)
   }
 
-  if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-red-600 mb-4">{error}</h2>
-          <p className="text-gray-600">Please try again later.</p>
-        </div>
-      </div>
-    );
+  const handleViewDetails = (profile: Profile) => {
+    setSelectedProfile(profile)
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Profiles</h1>
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Search profiles..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-64 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
-        </div>
+    <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
+      {profiles.length === 0 ? (
+        <div className="text-center p-8 text-muted-foreground">No profiles found</div>
+      ) : (
+        profiles.map((profile) => (
+          <Card key={profile.id} className="overflow-hidden">
+            <CardHeader className="p-4 pb-0">
+              <div className="flex items-center gap-3">
+                <Avatar className="h-10 w-10">
+                  <AvatarImage src={profile.photo || "/placeholder.svg"} alt={profile.name} />
+                  <AvatarFallback>
+                    <User className="h-5 w-5" />
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <h3 className="font-medium">{profile.name}</h3>
+                  <div className="flex items-center text-xs text-muted-foreground">
+                    <MapPin className="h-3 w-3 mr-1" />
+                    <span className="truncate max-w-[200px]">{profile.address}</span>
+                  </div>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-4">
+              <p className="text-sm text-muted-foreground line-clamp-2">{profile.description}</p>
+            </CardContent>
+            <CardFooter className="p-4 pt-0 flex justify-between">
+              <Button variant="outline" size="sm" onClick={() => handleViewDetails(profile)}>
+                View Details
+              </Button>
+              <Button variant="default" size="sm" onClick={() => handleShowSummary(profile)}>
+                Show on Map
+              </Button>
+            </CardFooter>
+          </Card>
+        ))
+      )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredProfiles.map((profile) => (
-            <Link key={profile.id} to={`/profile/${profile.id}`}>
-              <Card className="h-full hover:shadow-lg transition-shadow">
-                <CardHeader className="flex flex-row items-center gap-4">
-                  <Avatar className="h-12 w-12">
-                    <AvatarImage src={profile.photo} alt={profile.name} />
-                    <AvatarFallback>{profile.name.charAt(0)}</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <CardTitle>{profile.name}</CardTitle>
-                    {profile.occupation && (
-                      <p className="text-sm text-gray-600">{profile.occupation}</p>
-                    )}
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-gray-700 line-clamp-2">{profile.description}</p>
-                  <div className="mt-4 text-sm text-gray-600">
-                    <p>
-                      {profile.address.city}, {profile.address.country}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
-        </div>
-      </div>
+      <Dialog open={!!selectedProfile} onOpenChange={(open) => !open && setSelectedProfile(null)}>
+        {selectedProfile && (
+          <DialogContent className="max-w-2xl">
+            <ProfileDetails profile={selectedProfile} />
+          </DialogContent>
+        )}
+      </Dialog>
     </div>
-  );
+  )
 }

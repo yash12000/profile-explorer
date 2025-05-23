@@ -1,411 +1,394 @@
-"use client"
+import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import * as z from "zod"
+import { useProfiles } from "@/context/profile-context"
+import type { Profile } from "@/types/profile"
+import { Pencil, Trash2, Plus, Search } from "lucide-react"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
-import { useState, useEffect } from 'react';
-import { api } from '../services/api';
-import { Profile, ProfileFormData } from '../types/profile';
-import LoadingSpinner from './LoadingSpinner';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Textarea } from './ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from './ui/form';
-import { useForm } from 'react-hook-form';
+const profileFormSchema = z.object({
+  name: z.string().min(2, { message: "Name must be at least 2 characters" }),
+  photo: z.string().url({ message: "Please enter a valid URL" }).optional().or(z.literal("")),
+  description: z.string().min(10, { message: "Description must be at least 10 characters" }),
+  address: z.string().min(5, { message: "Address must be at least 5 characters" }),
+  email: z.string().email({ message: "Please enter a valid email" }).optional().or(z.literal("")),
+  phone: z.string().optional().or(z.literal("")),
+  occupation: z.string().optional().or(z.literal("")),
+  birthdate: z.string().optional().or(z.literal("")),
+  coordinates: z.object({
+    lat: z.number(),
+    lng: z.number(),
+  }),
+})
 
-export default function AdminPage() {
-  const [profiles, setProfiles] = useState<Profile[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [editingProfile, setEditingProfile] = useState<Profile | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
+type ProfileFormValues = z.infer<typeof profileFormSchema>
 
-  const form = useForm<ProfileFormData>({
+export function AdminPage() {
+  const { profiles, addProfile, updateProfile, deleteProfile } = useProfiles()
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [editingProfile, setEditingProfile] = useState<Profile | null>(null)
+  const [searchQuery, setSearchQuery] = useState("")
+
+  const form = useForm<ProfileFormValues>({
+    resolver: zodResolver(profileFormSchema),
     defaultValues: {
-      name: '',
-      photo: '',
-      description: '',
-      address: {
-        street: '',
-        city: '',
-        state: '',
-        country: '',
-        coordinates: {
-          lat: 0,
-          lng: 0,
-        },
-      },
-      email: '',
-      phone: '',
-      occupation: '',
-      birthdate: '',
-      interests: [],
+      name: "",
+      photo: "",
+      description: "",
+      address: "",
+      email: "",
+      phone: "",
+      occupation: "",
+      birthdate: "",
+      coordinates: { lat: 0, lng: 0 },
     },
-  });
+  })
 
-  useEffect(() => {
-    fetchProfiles();
-  }, []);
+  const openAddDialog = () => {
+    form.reset({
+      name: "",
+      photo: "",
+      description: "",
+      address: "",
+      email: "",
+      phone: "",
+      occupation: "",
+      birthdate: "",
+      coordinates: { lat: 40.7128, lng: -74.006 },
+    })
+    setEditingProfile(null)
+    setIsDialogOpen(true)
+  }
 
-  const fetchProfiles = async () => {
-    try {
-      const data = await api.getProfiles();
-      setProfiles(data);
-    } catch (err) {
-      setError('Failed to load profiles');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSubmit = async (data: ProfileFormData) => {
-    try {
-      if (editingProfile) {
-        await api.updateProfile(editingProfile.id, data);
-      } else {
-        await api.createProfile(data);
-      }
-      setEditingProfile(null);
-      form.reset();
-      fetchProfiles();
-    } catch (err) {
-      console.error('Error saving profile:', err);
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this profile?')) {
-      try {
-        await api.deleteProfile(id);
-        fetchProfiles();
-      } catch (err) {
-        console.error('Error deleting profile:', err);
-      }
-    }
-  };
-
-  const handleEdit = (profile: Profile) => {
-    setEditingProfile(profile);
+  const openEditDialog = (profile: Profile) => {
     form.reset({
       name: profile.name,
       photo: profile.photo,
       description: profile.description,
       address: profile.address,
-      email: profile.email || '',
-      phone: profile.phone || '',
-      occupation: profile.occupation || '',
-      birthdate: profile.birthdate || '',
-      interests: profile.interests || [],
-    });
-  };
-
-  const filteredProfiles = profiles.filter((profile) =>
-    profile.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  if (loading) {
-    return <LoadingSpinner />;
+      email: profile.email || "",
+      phone: profile.phone || "",
+      occupation: profile.occupation || "",
+      birthdate: profile.birthdate || "",
+      coordinates: profile.coordinates,
+    })
+    setEditingProfile(profile)
+    setIsDialogOpen(true)
   }
 
-  if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-red-600 mb-4">{error}</h2>
-          <p className="text-gray-600">Please try again later.</p>
-        </div>
-      </div>
-    );
+  const onSubmit = (data: ProfileFormValues) => {
+    if (editingProfile) {
+      updateProfile({
+        ...data,
+        id: editingProfile.id,
+      })
+    } else {
+      addProfile({
+        ...data,
+        id: Date.now().toString(),
+      })
+    }
+    setIsDialogOpen(false)
   }
+
+  const handleDeleteProfile = (id: string) => {
+    if (window.confirm("Are you sure you want to delete this profile?")) {
+      deleteProfile(id)
+    }
+  }
+
+  const geocodeAddress = async () => {
+    const address = form.getValues("address")
+    if (!address) return
+
+    try {
+      form.setValue("coordinates", { lat: 40.7128, lng: -74.006 })
+    } catch (error) {
+      console.error("Geocoding error:", error)
+    }
+  }
+
+  const filteredProfiles = profiles.filter(
+    (profile) =>
+      profile.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      profile.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      profile.address.toLowerCase().includes(searchQuery.toLowerCase()),
+  )
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-          <div className="relative">
-            <input
-              type="text"
+    <div className="space-y-6">
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Manage Profiles</CardTitle>
+          <Button onClick={openAddDialog}>
+            <Plus className="mr-2 h-4 w-4" /> Add Profile
+          </Button>
+        </CardHeader>
+        <CardContent>
+          <div className="mb-4 relative">
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
               placeholder="Search profiles..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-64 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="pl-9"
             />
           </div>
-        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Profiles</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Location</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredProfiles.map((profile) => (
-                      <TableRow key={profile.id}>
-                        <TableCell>{profile.name}</TableCell>
-                        <TableCell>
-                          {profile.address.city}, {profile.address.country}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex space-x-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleEdit(profile)}
-                            >
-                              Edit
-                            </Button>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => handleDelete(profile.id)}
-                            >
-                              Delete
-                            </Button>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Profile</TableHead>
+                  <TableHead>Address</TableHead>
+                  <TableHead className="hidden md:table-cell">Description</TableHead>
+                  <TableHead className="w-[100px]">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredProfiles.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center py-6 text-muted-foreground">
+                      No profiles found
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredProfiles.map((profile) => (
+                    <TableRow key={profile.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={profile.photo || "/placeholder.svg"} alt={profile.name} />
+                            <AvatarFallback>{profile.name.charAt(0)}</AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <div className="font-medium">{profile.name}</div>
+                            {profile.email && <div className="text-xs text-muted-foreground">{profile.email}</div>}
                           </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
+                        </div>
+                      </TableCell>
+                      <TableCell className="truncate max-w-[200px]">{profile.address}</TableCell>
+                      <TableCell className="hidden md:table-cell truncate max-w-[300px]">
+                        {profile.description}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Button variant="ghost" size="icon" onClick={() => openEditDialog(profile)}>
+                            <Pencil className="h-4 w-4" />
+                            <span className="sr-only">Edit</span>
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={() => handleDeleteProfile(profile.id)}>
+                            <Trash2 className="h-4 w-4" />
+                            <span className="sr-only">Delete</span>
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
           </div>
+        </CardContent>
+      </Card>
 
-          <div>
-            <Card>
-              <CardHeader>
-                <CardTitle>
-                  {editingProfile ? 'Edit Profile' : 'Add New Profile'}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Form {...form}>
-                  <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-                    <FormField
-                      control={form.control}
-                      name="name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Name</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{editingProfile ? "Edit Profile" : "Add New Profile"}</DialogTitle>
+          </DialogHeader>
 
-                    <FormField
-                      control={form.control}
-                      name="photo"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Photo URL</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="John Doe" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-                    <FormField
-                      control={form.control}
-                      name="description"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Description</FormLabel>
-                          <FormControl>
-                            <Textarea {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                <FormField
+                  control={form.control}
+                  name="photo"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Photo URL</FormLabel>
+                      <FormControl>
+                        <Input placeholder="https://example.com/photo.jpg" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-                    <FormField
-                      control={form.control}
-                      name="address.street"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Street</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input placeholder="john@example.com" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-                    <FormField
-                      control={form.control}
-                      name="address.city"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>City</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                <FormField
+                  control={form.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Phone</FormLabel>
+                      <FormControl>
+                        <Input placeholder="+1 (555) 123-4567" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-                    <FormField
-                      control={form.control}
-                      name="address.state"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>State</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                <FormField
+                  control={form.control}
+                  name="occupation"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Occupation</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Software Engineer" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-                    <FormField
-                      control={form.control}
-                      name="address.country"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Country</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                <FormField
+                  control={form.control}
+                  name="birthdate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Birthdate</FormLabel>
+                      <FormControl>
+                        <Input placeholder="January 1, 1990" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-                    <FormField
-                      control={form.control}
-                      name="address.coordinates.lat"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Latitude</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="number"
-                              step="any"
-                              onChange={(e) => field.onChange(Number.parseFloat(e.target.value))}
-                              value={field.value}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                <FormField
+                  control={form.control}
+                  name="address"
+                  render={({ field }) => (
+                    <FormItem className="md:col-span-2">
+                      <FormLabel>Address</FormLabel>
+                      <div className="flex gap-2">
+                        <FormControl>
+                          <Input
+                            placeholder="123 Main St, New York, NY 10001"
+                            {...field}
+                            onChange={(e) => {
+                              field.onChange(e)
+                            }}
+                          />
+                        </FormControl>
+                        <Button type="button" variant="outline" onClick={geocodeAddress}>
+                          Geocode
+                        </Button>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-                    <FormField
-                      control={form.control}
-                      name="address.coordinates.lng"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Longitude</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="number"
-                              step="any"
-                              onChange={(e) => field.onChange(Number.parseFloat(e.target.value))}
-                              value={field.value}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem className="md:col-span-2">
+                      <FormLabel>Description</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Enter a brief description about this person..."
+                          className="min-h-[100px]"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-                    <FormField
-                      control={form.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Email</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                <div className="md:col-span-2 grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="coordinates.lat"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Latitude</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            step="0.000001"
+                            {...field}
+                            onChange={(e) => field.onChange(Number.parseFloat(e.target.value))}
+                            value={field.value}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                    <FormField
-                      control={form.control}
-                      name="phone"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Phone</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                  <FormField
+                    control={form.control}
+                    name="coordinates.lng"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Longitude</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            step="0.000001"
+                            {...field}
+                            onChange={(e) => field.onChange(Number.parseFloat(e.target.value))}
+                            value={field.value}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
 
-                    <FormField
-                      control={form.control}
-                      name="occupation"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Occupation</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="birthdate"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Birth Date</FormLabel>
-                          <FormControl>
-                            <Input type="date" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <div className="flex justify-end space-x-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => {
-                          setEditingProfile(null);
-                          form.reset();
-                        }}
-                      >
-                        Cancel
-                      </Button>
-                      <Button type="submit">
-                        {editingProfile ? 'Update' : 'Create'}
-                      </Button>
-                    </div>
-                  </form>
-                </Form>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit">{editingProfile ? "Update Profile" : "Add Profile"}</Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </div>
-  );
+  )
 }

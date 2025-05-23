@@ -1,82 +1,121 @@
 "use client"
 
-import { useState, useEffect } from 'react';
-import { GoogleMap, Marker } from '@react-google-maps/api';
-import { api } from '../services/api';
-import { Profile } from '../types/profile';
-import LoadingSpinner from './LoadingSpinner';
+import { useEffect, useRef } from "react"
+import type { Profile } from "@/types/profile"
+import { useProfiles } from "@/context/profile-context"
+import { Loader2 } from "lucide-react"
 
-const mapContainerStyle = {
-  width: '100%',
-  height: '400px',
-};
+interface MapViewProps {
+  selectedProfile: Profile | null
+}
 
-const center = {
-  lat: 0,
-  lng: 0,
-};
-
-export default function MapView() {
-  const [profiles, setProfiles] = useState<Profile[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+export function MapView({ selectedProfile }: MapViewProps) {
+  const mapRef = useRef<HTMLDivElement>(null)
+  const mapInstanceRef = useRef<google.maps.Map | null>(null)
+  const markersRef = useRef<google.maps.Marker[]>([])
+  const { profiles } = useProfiles()
 
   useEffect(() => {
-    fetchProfiles();
-  }, []);
+    const loadGoogleMapsScript = () => {
+      const script = document.createElement("script")
+      script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyBZNbnywmu0lo-aN_hPAivqOIqb3QGnX_k&callback=initMap`
+      script.async = true
+      script.defer = true
+      document.head.appendChild(script)
 
-  const fetchProfiles = async () => {
-    try {
-      const data = await api.getProfiles();
-      setProfiles(data);
-    } catch (err) {
-      setError('Failed to load profiles');
-      console.error(err);
-    } finally {
-      setLoading(false);
+      window.initMap = () => {
+        if (mapRef.current && !mapInstanceRef.current) {
+          initializeMap()
+        }
+      }
     }
-  };
 
-  if (loading) {
-    return <LoadingSpinner />;
+    if (!window.google?.maps) {
+      loadGoogleMapsScript()
+    } else if (mapRef.current && !mapInstanceRef.current) {
+      initializeMap()
+    }
+
+    return () => {
+      window.initMap = undefined
+    }
+  }, [])
+
+  const initializeMap = () => {
+    if (!mapRef.current) return
+
+    mapInstanceRef.current = new google.maps.Map(mapRef.current, {
+      center: { lat: 40.7128, lng: -74.006 },
+      zoom: 12,
+      mapTypeControl: false,
+      fullscreenControl: false,
+      streetViewControl: false,
+    })
+
+    addProfileMarkers()
   }
 
-  if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-red-600 mb-4">{error}</h2>
-          <p className="text-gray-600">Please try again later.</p>
-        </div>
-      </div>
-    );
+  const addProfileMarkers = () => {
+    if (!mapInstanceRef.current) return
+
+    markersRef.current.forEach((marker) => marker.setMap(null))
+    markersRef.current = []
+
+    profiles.forEach((profile) => {
+      const marker = new google.maps.Marker({
+        position: profile.coordinates,
+        map: mapInstanceRef.current,
+        title: profile.name,
+        animation: google.maps.Animation.DROP,
+      })
+
+      const infoWindow = new google.maps.InfoWindow({
+        content: `
+          <div style="padding: 8px; max-width: 200px;">
+            <h3 style="margin: 0 0 8px; font-weight: 500;">${profile.name}</h3>
+            <p style="margin: 0; font-size: 14px;">${profile.address}</p>
+          </div>
+        `,
+      })
+
+      marker.addListener("click", () => {
+        infoWindow.open(mapInstanceRef.current, marker)
+      })
+
+      markersRef.current.push(marker)
+    })
   }
+
+  useEffect(() => {
+    if (!mapInstanceRef.current || !selectedProfile) return
+
+    mapInstanceRef.current.setCenter(selectedProfile.coordinates)
+    mapInstanceRef.current.setZoom(15)
+
+    markersRef.current.forEach((marker) => {
+      if (marker.getTitle() === selectedProfile.name) {
+        marker.setAnimation(google.maps.Animation.BOUNCE)
+
+        setTimeout(() => {
+          marker.setAnimation(null)
+        }, 1500)
+      }
+    })
+  }, [selectedProfile])
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-6xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">Profile Locations</h1>
-        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-          <GoogleMap
-            mapContainerStyle={mapContainerStyle}
-            center={center}
-            zoom={2}
-          >
-            {profiles.map((profile) => (
-              <Marker
-                key={profile.id}
-                position={{
-                  lat: profile.address.coordinates.lat,
-                  lng: profile.address.coordinates.lng,
-                }}
-                title={profile.name}
-              />
-            ))}
-          </GoogleMap>
+    <div className="relative h-full w-full">
+      {!window.google?.maps && (
+        <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-10">
+          <div className="flex flex-col items-center gap-2">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-sm text-muted-foreground">Loading map...</p>
+          </div>
         </div>
-      </div>
+      )}
+      <div ref={mapRef} className="h-full w-full" />
     </div>
-  );
+  )
 }
 
 declare global {

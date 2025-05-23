@@ -1,14 +1,14 @@
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { api } from '../services/api';
-import { Profile } from '../types/profile';
-import LoadingSpinner from '../components/LoadingSpinner';
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { api } from "../services/api";
+import { Profile } from "../types/profile";
+import LoadingSpinner from "../components/LoadingSpinner";
 
 export default function Home() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     const fetchProfiles = async () => {
@@ -16,7 +16,7 @@ export default function Home() {
         const data = await api.getProfiles();
         setProfiles(data);
       } catch (err) {
-        setError('Failed to load profiles');
+        setError("Failed to load profiles");
         console.error(err);
       } finally {
         setLoading(false);
@@ -90,7 +90,9 @@ export default function Home() {
                 <h2 className="text-xl font-semibold text-gray-900 mb-2">
                   {profile.name}
                 </h2>
-                <p className="text-gray-600 line-clamp-2">{profile.description}</p>
+                <p className="text-gray-600 line-clamp-2">
+                  {profile.description}
+                </p>
                 <div className="mt-4 flex items-center text-sm text-gray-500">
                   <svg
                     className="h-5 w-5 mr-2"
@@ -126,4 +128,4 @@ export default function Home() {
       </div>
     </div>
   );
-} 
+}
