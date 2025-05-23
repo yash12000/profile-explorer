@@ -8,8 +8,8 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-} from "../components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
+} from "../components/admin/card";
+import { Avatar, AvatarFallback, AvatarImage } from "../components/admin/avatar";
 import { Mail, Phone, MapPin, Calendar, Briefcase, Tag } from "lucide-react";
 
 export default function ProfileDetails() {

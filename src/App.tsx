@@ -1,28 +1,29 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { Suspense, lazy } from 'react';
-import Navbar from './components/Navbar';
-import LoadingSpinner from './components/LoadingSpinner';
-
-const Home = lazy(() => import('./app/Home'));
-const ProfileDetails = lazy(() => import('./app/ProfileDetails'));
-const AdminDashboard = lazy(() => import('./app/AdminDashboard'));
+import { useState } from 'react';
+import { Routes, Route } from 'react-router-dom';
+import { ProfilesProvider } from './contexts/ProfilesContext';
+import HomePage from './pages/HomePage';
+import ProfileDetailPage from './pages/ProfileDetailPage';
+import AdminPage from './pages/AdminPage';
+import NotFoundPage from './pages/NotFoundPage';
+import Navbar from './components/layout/Navbar';
+import Footer from './components/layout/Footer';
 
 function App() {
   return (
-    <Router>
-      <div className="min-h-screen bg-gray-50">
+    <ProfilesProvider>
+      <div className="flex flex-col min-h-screen bg-gray-50">
         <Navbar />
-        <main className="container mx-auto px-4 py-8">
-          <Suspense fallback={<LoadingSpinner />}>
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/profile/:id" element={<ProfileDetails />} />
-              <Route path="/admin" element={<AdminDashboard />} />
-            </Routes>
-          </Suspense>
+        <main className="flex-grow">
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/profile/:id" element={<ProfileDetailPage />} />
+            <Route path="/admin" element={<AdminPage />} />
+            <Route path="*" element={<NotFoundPage />} />
+          </Routes>
         </main>
+        <Footer />
       </div>
-    </Router>
+    </ProfilesProvider>
   );
 }
 

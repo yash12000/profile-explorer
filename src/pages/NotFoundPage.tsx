@@ -10,8 +10,8 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-} from "../components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
+} from "../components/admin/card";
+import { Avatar, AvatarFallback, AvatarImage } from "../components/admin/avatar";
 
 export default function Home() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
