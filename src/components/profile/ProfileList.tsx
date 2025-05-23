@@ -4,7 +4,7 @@ import ProfileCard from "./ProfileCard";
 import SearchFilter from "./SearchFilter";
 import MapView from "../map/MapView";
 import { Profile, SearchFilters } from "../../types";
-import { Loader } from "lucide-react";
+import { Loader, MapPin } from "lucide-react";
 
 const ProfileList = () => {
   const { profiles, loading, error } = useProfiles();
